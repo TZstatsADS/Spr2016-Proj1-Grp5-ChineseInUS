@@ -1,0 +1,381 @@
+---
+title: "Project_1_final"
+author: "Yuchen Shi (ys2901)"
+date: "February 3, 2016"
+output: pdf_document
+---
+## Install packages
+
+```{r}
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(maps)
+```
+
+## Data Preparation 
+
+```{r}
+setwd("~/Desktop/Applied Data Science/csv_pus")
+pusa <- fread("~/Desktop/Applied Data Science/csv_pus/ss13pusa.csv")
+pusb <- fread("~/Desktop/Applied Data Science/csv_pus/ss13pusb.csv")
+pus <- rbind(pusa, pusb)
+
+# Here we define chinese data
+
+chinese <- pus%>%
+filter(RAC2P==43|RAC2P==44|POBP==207|POBP==209|POBP==240)
+
+# Here we define chinese master students data 
+
+masterchinese.pus = chinese%>%
+        filter(SCHL==22)
+
+# Here we interpret our varibles 
+
+chinese$ST <- as.factor(chinese$ST)
+chinese$MSP<-as.factor(chinese$MSP)
+chinese$SCIENGRLP<-as.factor(chinese$SCIENGRLP)
+chinese$SEX<-as.factor(chinese$SEX)
+chinese$ESR<-as.factor(chinese$ESR)
+levels(chinese$MSP)<-c("married&spouse present","married&spouse absent","Widowed","Divorced","Separated","Never married")
+levels(chinese$SCIENGRLP)<-c("Sci","Non-sci")
+levels(chinese$SEX)<-c("Male","Female")
+levels(chinese$ESR)<-c("empd&work","empd not work","unempd","af&work","af with job but not work","not in labor force")
+
+# Code for state name
+
+levels(chinese$ST) <- c("Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
+"Delaware", "District of Columbia", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois",
+"Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts",
+"Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", 
+"New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota",
+"Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
+"Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia",
+"Wisconsin", "Wyoming", "Puerto Rico")
+
+# code for industry
+
+chinese$INDP <- ifelse(chinese$INDP>= 170 & chinese$INDP <= 290, 170, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP>= 370 & chinese$INDP <= 490, 370, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 570 & chinese$INDP<= 770, 570, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 1070 & chinese$INDP <= 3990, 1070, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 4070 & chinese$INDP <= 6390, 4070, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 6470 & chinese$INDP <= 6780, 6470, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP>= 6870 & chinese$INDP <= 7190, 6870, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 7270 & chinese$INDP <= 7790, 7270, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 7860 & chinese$INDP<= 7890, 7860, chinese$INDP)
+chinese$INDP<- ifelse(chinese$INDP >= 7970 & chinese$INDP <= 8290, 7970, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 8370 & chinese$INDP <= 8470, 8370, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP %in% c(8660, 8680, 8690), 8370, chinese$INDP) 
+chinese$INDP <- ifelse(chinese$INDP >= 8770 & chinese$INDP <= 9290, 8370, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP %in% c(8560, 8570, 8580, 8590, 8670), 8560, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 9370 & chinese$INDP <= 9590, 9370, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 9670 & chinese$INDP<= 9870, 9670, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 9920, 9920, chinese$INDP)
+chinese$INDP <- factor(chinese$INDP)
+levels(chinese$INDP) <- c("Agriculture, Forestry, Fishing, Hunting", "Mining", "Utilities, Construction", 
+              "Manufacturing", "Trade, Logistic", "Information, Communications", "Finance",
+              "Professional", "Education", "Health", "Other Services",
+              "Arts, Entertainment", "Public Administration", "Military", "Unemployed"
+            )
+
+# code for decade
+
+chinese$DECADE <- factor(chinese$DECADE)
+levels(chinese$DECADE) <- c("~1950's", "1950's", "1960's", "1970's", "1980's", "1990's", "2000's~")
+```
+
+
+## Where chinese immigrants live or study
+
+```{r}
+# prepare data 
+all_state <- map_data("state")
+data <- as.data.frame(prop.table(table(chinese$ST)))
+data$state <- c(sort(tolower(c("district of columbia", state.name))),tolower("Puerto Rico"))
+all_state$freq <- data$Freq[match(all_state$region, data$state)]*100
+
+# draw map
+p_1 <- ggplot(all_state, aes(x=long, y=lat, group=group)) + 
+      geom_polygon(aes(fill=freq), colour="gray78") + 
+      scale_fill_gradient(name="Proportion", low="white", high="blue")
+p_1 <- p_1 + theme(strip.background = element_blank(),
+               strip.text.x     = element_blank(),
+               axis.text.x      = element_blank(),
+               axis.text.y      = element_blank(),
+               axis.ticks       = element_blank(),
+               axis.line        = element_blank(),
+               panel.background = element_blank(),
+               panel.border     = element_blank(),
+               panel.grid       = element_blank(),
+               legend.position  = "right") +
+          xlab("") + ylab("") + ggtitle("Avg. Number of Chinese by State")
+
+p_1
+```
+
+We can see that California obviously dominates the place where most chinese live, new york state comes next.
+
+## Average wage of chinese immigrants by state
+
+```{r}
+#prepare average income data
+
+average_wage <- chinese %>%
+        filter(is.na(WAGP) == F) %>% 
+        group_by(ST) %>% 
+        summarise(wage = mean(WAGP))
+# we don't have Puerto Rico here
+state_51 = data[-52,]
+state_51$wage = average_wage$wage
+all_state$wage = state_51$wage[match(all_state$region,state_51$state)]
+
+#draw map 
+
+p_2 <- ggplot(all_state, aes(x=long, y=lat, group=group)) + 
+      geom_polygon(aes(fill=wage), colour="gray78") + 
+      scale_fill_gradient(name="wage", low="white", high="blue")
+p_2 <- p_2 + theme(strip.background = element_blank(),
+               strip.text.x     = element_blank(),
+               axis.text.x      = element_blank(),
+               axis.text.y      = element_blank(),
+               axis.ticks       = element_blank(),
+               axis.line        = element_blank(),
+               panel.background = element_blank(),
+               panel.border     = element_blank(),
+               panel.grid       = element_blank(),
+               legend.position  = "right") +
+          xlab("") + ylab("") + ggtitle("Avg. wage of Chinese by State")
+
+p_2
+```
+
+## Chinese Immigrants' working hours by state
+
+```{r}
+#prep
+all_state <- map_data("state")
+data <- as.data.frame(prop.table(table(chinese$ST)))
+data$state <- c(sort(tolower(c("district of columbia", state.name))),tolower("Puerto Rico"))
+all_state$freq <- data$Freq[match(all_state$region, data$state)]*100
+
+#work hour of chinese masters
+work_hour <- chinese %>%
+        filter(is.na(WKHP) == F) %>%
+        group_by(ST) %>%
+        summarise(workhour = mean(WKHP))
+state_51 = data[-c(52),]
+state_51$workhour = work_hour$workhour
+all_state$workhour = work_hour$workhour[match(all_state$region,state_51$state)]
+
+p_work <- ggplot(all_state, aes(x=long, y=lat, group=group))+
+        geom_polygon(aes(fill=workhour), color = "gray78") +
+        scale_fill_gradient(name="working hour", low="white", high = "blue")
+p_work <- p_work + theme(strip.background = element_blank(),
+                         strip.text.x     = element_blank(),
+                         axis.text.x      = element_blank(),
+                         axis.text.y      = element_blank(),
+                         axis.ticks       = element_blank(),
+                         axis.line        = element_blank(),
+                         panel.background = element_blank(),
+                         panel.border     = element_blank(),
+                         panel.grid       = element_blank(),
+                         legend.position  = "right") +
+        xlab("") + ylab("") + ggtitle("Avg. working time of Chinese by State")
+
+p_work
+```
+
+Form the map, after considering state with enough people, we can see people with highest wage comes from new jersey and texas. We may want to check the income structure in taxes and new jersey.
+
+## Average wage for chinese immigrants with a master degree or higher by state
+
+```{r}
+# prepare data 
+wage_degree <- chinese %>%
+        filter(is.na(WAGP) == F, SCHL>=21) %>% 
+        group_by(ST) %>% 
+        summarise(wage = mean(WAGP))
+state_51d = data[-52,]
+# We don't have Puerto Rico, Montana and North Dakoda here
+state_51d$wage = wage_degree$wage
+all_state$wage = state_51d$wage[match(all_state$region,state_51d$state)]
+
+# draw map
+
+p_3 <- ggplot(all_state, aes(x=long, y=lat, group=group)) + 
+      geom_polygon(aes(fill=wage), colour="gray78") + 
+      scale_fill_gradient(name="wage", low="white", high="blue")
+p_3 <- p_3 + theme(strip.background = element_blank(),
+               strip.text.x     = element_blank(),
+               axis.text.x      = element_blank(),
+               axis.text.y      = element_blank(),
+               axis.ticks       = element_blank(),
+               axis.line        = element_blank(),
+               panel.background = element_blank(),
+               panel.border     = element_blank(),
+               panel.grid       = element_blank(),
+               legend.position  = "right") +
+          xlab("") + ylab("") + ggtitle("Avg. wage of Chinese with high degree by State")
+
+p_3
+```
+
+We can see California gets darker when we look at people with a high degree, new york and new jersey still dominates the map. we may want to say the income structure in new york, new jersey, and california.
+
+## The wage structure of chinese immigrants in Texas
+
+```{r}
+# prepare the data 
+TX_structure = chinese %>% 
+        filter(ST == "Texas",is.na(WAGP) == F) %>%
+        group_by(DECADE, INDP) %>%
+        summarise(wage = mean(WAGP))
+TX_structure$INDP <- factor(TX_structure$INDP, levels = levels(TX_structure$INDP)[length(levels(TX_structure$INDP)):1])
+#Plot the Taxes income structure
+ggplot(TX_structure, aes(x=DECADE)) + geom_point(aes(y=INDP, size=wage, colour=INDP)) +
+  ggtitle("Avg. Income by Industry and Immigrant Period") +
+  guides(colour=FALSE) + theme_minimal()
+```
+
+From this graph, we can see that Mining and are a job with a comparetively good salary in each generation; Information and Comunication dominates the job market in 1980's. Health is a goo d job for experienced people but not for youth. 
+
+## Check the working time and salary level for males and females 
+
+```{r}
+Male<-subset(masterchinese.pus,masterchinese.pus$SEX=="Male")
+Female<-subset(masterchinese.pus,masterchinese.pus$SEX=="Female")
+meansal.m<-mean(Male$PINCP,na.rm = T)
+meanwkh.m<-mean(Male$WKHP,na.rm = T)
+meansal.f<-mean(Female$PINCP,na.rm = T)
+meanwkh.f<-mean(Female$WKHP,na.rm = T)
+plot(meanwkh.m,meansal.m,xlim = c(25,55),col="red",pch=19,xlab = "mean.workinghour",ylab = "mean.salary")
+points(meanwkh.f,meansal.f,pch=19,xlim = c(25,55),col="lightblue")
+legend("topright",col = c("red","lightblue"),pch=19,legend = c("Male","Female"),bty="n",cex=0.75)
+```
+
+we can see that the average working hour of males and females are very close, 
+which indicates the difference in salary is not caused by this factor
+
+## Compare the salary level for Sci and Non-Sci industries and the males' and females' percentage
+
+```{r}
+#Industry
+salar.ind=
+  masterchinese.pus%>%
+  group_by(SCIENGP)%>%
+  summarise(
+    avgsalary=mean(PINCP,na.rm=T)
+  )
+salar.ind$SCIENGP<-as.factor(salar.ind$SCIENGP)
+levels(salar.ind$SCIENGP)<-c("Sci","Non-sci")
+plot(salar.ind$avgsalary~salar.ind$SCIENGP)
+
+#Industrys-gender
+slices.m<-c(sum(Male$SCIENGP==1),sum(Male$SCIENGP==2))
+labels.m<-c("Scientific","Non-scientific")
+labels.m <- paste(labels.m, " ", round(slices.m/sum(slices.m)*100,2), "%", sep="")
+pie(slices.m,labels.m,main="Industry--Male",col =c("lightgreen","lightyellow"))
+
+slices.f<-c(sum(Female$SCIENGP==1),sum(Female$SCIENGP==2))
+labels.f<-c("Scientific","Non-scientific")
+labels.f <- paste(labels.f, " ", round(slices.f/sum(slices.f)*100,2), "%", sep="")
+pie(slices.f,labels.f,main="Industry--Female",col =c("lightgreen","lightyellow"))
+```
+
+we can see that scientific industry earns more than those non-scientific
+and also data shows that males are more likelily to be in a scientific industry than females
+so the industry difference might be accounted for the salary difference
+
+## Is there gender discrimination ?
+
+```{r}
+saldif.sci=
+  masterchinese.pus%>%
+  filter(SCIENGP=="1")%>%
+  group_by(SEX)%>%
+  summarise(
+    avgsalary=mean(PINCP,na.rm=T)
+  )
+saldif.sci$SEX<-as.factor(saldif.sci$SEX)
+levels(saldif.sci$SEX)<-c("Male","Female")
+saldif.nonsci=
+  masterchinese.pus%>%
+  filter(SCIENGP=="2")%>%
+  group_by(SEX)%>%
+  summarise(
+    avgsalary=mean(PINCP,na.rm=T)
+  )
+saldif.nonsci$SEX<-as.factor(saldif.nonsci$SEX)
+levels(saldif.nonsci$SEX)<-c("Male","Female")
+
+par(mfrow=c(1,2))
+plot(saldif.sci,ylim=c(50000,100000),main="sci",cex.axis=0.8,cex.lab=0.8)
+plot(saldif.nonsci,ylim=c(50000,100000),main="non-sci",cex.axis=0.8,cex.lab=0.8)
+```
+
+As we can see, there do exist gender discrimination at some extent. 
+For that under the same education level, close working hour and the same industry, 
+there's still much difference in salary between males and females.
+
+## Occupation
+
+```{r}
+Occupation=
+  Female%>%
+  filter(OCCP>0)%>%
+  group_by(OCCP)%>%
+  summarise(n=n())
+  mutate(Occupation,Count=n)%>%
+  arrange(desc(Count))
+  
+occp.sort<- Occupation[order(Occupation$n,decreasing = T),]
+occp.sort<- as.data.frame(occp.sort)
+occp.sort<- subset(occp.sort,occp.sort$n >30)
+barplot(occp.sort$n,names.arg = occp.sort$OCCP,col=terrain.colors(12),cex.names = 0.4)
+legend("topright",legend = c("800:ACCOUNTANTS AND AUDITORS","2200:POSTSECONDARY TEACHERS","1020:SOFTWARE DEVELOPERS","2310:ELEMENTARY&MIDDLE TEACHERS","430:MISCELLANEOUS MANAGERS","120:FINANCIAL MANAGERS","1010:COMPUTER PROGRAMMERS","710:MANAGEMENT ANALYSTS","1006:COMPUTER SYSTEMS","5700:SECRETARIES$ASSISTANTS","3255:REGISTERED NURSES","1760:PHYSICAL SCIENTISTS, ALL OTHER"),bty="n",cex=0.7)
+```
+
+we're interested in the occupations that are most welcomed by chinese females
+as we can see, the occupation which attracts most females is accounting and finance related jobs, which comforms to our assumption.
+
+## Chinese Imigrants' gender distribution on different ages
+
+```{r}
+ggplot(chinese, aes(AGEP, group=SEX)) + 
+  geom_bar(aes(colour=SEX, fill=SEX), binwidth=1, alpha=0.9) +
+  xlab("Age") + ylab("Count") + ggtitle("Chinese Population Age by SEX")
+```
+
+## Chinese immigrants' Marital Status distribution 
+
+```{r}
+ifmarried <- rep(0,dim(chinese)[1])
+for (i in 1:dim(chinese)[1]){
+  if (chinese$MAR[i]==1){
+    ifmarried[i]= 1
+  }
+}
+ggplot(chinese, aes(AGEP, group=ifmarried)) + 
+  geom_bar(aes(colour=ifmarried, fill=ifmarried), binwidth=1, alpha=0.9) +
+  xlab("Age") + ylab("Count") + ggtitle("Chinese Population Age by Marital Status")
+```
+
+## Chinese immigrants job distribution 
+
+```{r}
+counts <- table(chinese$INDP)
+barplot(counts,beside=FALSE,main="Industry Distribution", horiz=FALSE,
+        col=rainbow(15),xlab="Count",ylab="Industry",names.arg = FALSE,
+        legend = c("Agri", "Mining", "Utilities", 
+                   "Manufa", "Trade, Logistic", "Information", "Finance",
+                   "Professional", "Education", "Health", "Other",
+                   "ArtsEnt", "Adm","Military", "Unemployed"))
+```
+
+
+
+
+
+
