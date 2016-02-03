@@ -1,0 +1,291 @@
+---
+title: "first project"
+author: "Yuchen Shi (ys2901)"
+date: "January 30, 2016"
+output: pdf_document
+---
+```{r}
+# Install packages
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(maps)
+```
+
+```{r}
+
+# Data Preparation
+# Selecting 11 relevant variables with all observations in data set "pus"
+# Number of observations: 3132795
+
+setwd("~/Desktop/Applied Data Science/csv_pus")
+# col<-c("SCHL","ST","PINCP","MSP","OCCP","SCIENGRLP","WKHP","SEX","ESR","POBP","RAC2P")
+pusa <- fread("~/Desktop/Applied Data Science/csv_pus/ss13pusa.csv")
+pusb <- fread("~/Desktop/Applied Data Science/csv_pus/ss13pusb.csv")
+pus <- rbind(pusa, pusb)
+rm(pusa, pusb)
+gc()
+
+--------------------------------------------------------------------------------------------
+# Selecting Target Group
+
+# Selecting Chinese Students
+# First filter by race, then filter by place of birth. That is, we are selecting people who are Chinese by race, and also were born in China, Taiwan, and Hong Kong, in data set "chinese" 
+# Number of observations: 22758 
+
+chinese <- pus%>%
+filter(RAC2P==43|RAC2P==44|POBP==207|POBP==209|POBP==240)%>%
+filter(POBP==207|POBP==209|POBP==240)
+
+# Selecting Chinese students with a Master Degree, in data set "masterchinese.pus"
+# Number of Observations: 3725
+
+chinese$ST <- as.factor(chinese$ST)
+chinese$MSP<-as.factor(chinese$MSP)
+chinese$SCIENGRLP<-as.factor(chinese$SCIENGRLP)
+chinese$SEX<-as.factor(chinese$SEX)
+chinese$ESR<-as.factor(chinese$ESR)
+levels(chinese$ST) <- c("Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
+"Delaware", "District of Columbia", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois",
+"Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts",
+"Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", 
+"New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota",
+"Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
+"Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia",
+"Wisconsin", "Wyoming", "Puerto Rico")
+levels(chinese$MSP)<-c("married&spouse present","married&spouse absent","Widowed","Divorced","Separated","Never married")
+levels(chinese$SCIENGRLP)<-c("Sci","Non-sci")
+levels(chinese$SEX)<-c("Male","Female")
+levels(chinese$ESR)<-c("empd&work","empd not work","unempd","af&work","af with job but not work","not in labor force")
+chinese$AB = data$ab[match(data$Var1, chinese$ST)]
+
+# code for industry
+chinese$INDP <- ifelse(chinese$INDP>= 170 & chinese$INDP <= 290, 170, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP>= 370 & chinese$INDP <= 490, 370, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 570 & chinese$INDP<= 770, 570, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 1070 & chinese$INDP <= 3990, 1070, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 4070 & chinese$INDP <= 6390, 4070, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 6470 & chinese$INDP <= 6780, 6470, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP>= 6870 & chinese$INDP <= 7190, 6870, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 7270 & chinese$INDP <= 7790, 7270, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 7860 & chinese$INDP<= 7890, 7860, chinese$INDP)
+chinese$INDP<- ifelse(chinese$INDP >= 7970 & chinese$INDP <= 8290, 7970, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 8370 & chinese$INDP <= 8470, 8370, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP %in% c(8660, 8680, 8690), 8370, chinese$INDP) 
+chinese$INDP <- ifelse(chinese$INDP >= 8770 & chinese$INDP <= 9290, 8370, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP %in% c(8560, 8570, 8580, 8590, 8670), 8560, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 9370 & chinese$INDP <= 9590, 9370, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 9670 & chinese$INDP<= 9870, 9670, chinese$INDP)
+chinese$INDP <- ifelse(chinese$INDP >= 9920, 9920, chinese$INDP)
+chinese$INDP <- factor(chinese$INDP)
+levels(chinese$INDP) <- c("Agriculture, Forestry, Fishing, Hunting", "Mining", "Utilities, Construction", 
+              "Manufacturing", "Trade, Logistic", "Information, Communications", "Finance",
+              "Professional", "Education", "Health", "Other Services",
+              "Arts, Entertainment", "Public Administration", "Military", "Unemployed"
+            )
+chinese$DECADE <- factor(chinese$DECADE)
+levels(chinese$DECADE) <- c("~1950's", "1950's", "1960's", "1970's", "1980's", "1990's", "2000's~")
+```
+
+Look at where chinese immigrants live or study
+
+```{r}
+# prepare data 
+all_state <- map_data("state")
+data <- as.data.frame(prop.table(table(chinese$ST)))
+data$state <- c(sort(tolower(c("district of columbia", state.name))),tolower("Puerto Rico"))
+all_state$freq <- data$Freq[match(all_state$region, data$state)]*100
+
+# draw map
+p_1 <- ggplot(all_state, aes(x=long, y=lat, group=group)) + 
+      geom_polygon(aes(fill=freq), colour="gray78") + 
+      scale_fill_gradient(name="Proportion", low="white", high="blue")
+p_1 <- p_1 + theme(strip.background = element_blank(),
+               strip.text.x     = element_blank(),
+               axis.text.x      = element_blank(),
+               axis.text.y      = element_blank(),
+               axis.ticks       = element_blank(),
+               axis.line        = element_blank(),
+               panel.background = element_blank(),
+               panel.border     = element_blank(),
+               panel.grid       = element_blank(),
+               legend.position  = "right") +
+          xlab("") + ylab("") + ggtitle("Avg. Number of Chinese by State")
+
+p_1
+
+# We can see that California obviously dominates the place where most chinese live, new york state comes next.
+        
+# People with at least bachelor degree
+
+good_eduction <- chinese[SCHL>=21]
+ab <- c(state.abb[1:8],"DC",state.abb[9:50],"PR")
+data <- as.data.frame(prop.table(table(good_eduction$ST)))
+data$state <- c(sort(tolower(c("district of columbia", state.name))),tolower("Puerto Rico"))
+data$ab <- ab
+all_state$freq <- data$Freq[match(all_state$region,data$state)]*100
+all_state$ab <- data$ab[match(all_state$region,data$state)]
+p_2 <- ggplot(all_state,aes(x = long, y = lat, group = group))+
+        geom_polygon(aes(fill=freq),colour='gray78')+
+        scale_fill_gradient(name="Proption",low="white",high="Blue")
+p_2 <- p_2 + theme(strip.background = element_blank(),
+               strip.text.x     = element_blank(),
+               axis.text.x      = element_blank(),
+               axis.text.y      = element_blank(),
+               axis.ticks       = element_blank(),
+               axis.line        = element_blank(),
+               panel.background = element_blank(),
+               panel.border     = element_blank(),
+               panel.grid       = element_blank(),
+               legend.position  = "right") +
+          xlab("") + ylab("") + ggtitle("Avg. Number of Chinese by State")
+
+p_2
+
+# We can see that Califonia is still most chinese people with high degree lived, but the color of new york gets lighter than before and the color of taxes gets much darker.
+```
+
+Average income in the state
+
+```{r}
+#prepare average income data
+
+average_wage <- chinese %>%
+        filter(is.na(WAGP) == F) %>% 
+        group_by(ST) %>% 
+        summarise(wage = median(WAGP))
+# we don't have Puerto Rico here
+state_51 = data[-52,]
+state_51$wage = average_income$wage
+all_state$wage = state_51$wage[match(all_state$region,state_51$state)]
+
+#draw map 
+
+p_3 <- ggplot(all_state, aes(x=long, y=lat, group=group)) + 
+      geom_polygon(aes(fill=wage), colour="gray78") + 
+      scale_fill_gradient(name="wage", low="white", high="blue")
+p_3 <- p_3 + theme(strip.background = element_blank(),
+               strip.text.x     = element_blank(),
+               axis.text.x      = element_blank(),
+               axis.text.y      = element_blank(),
+               axis.ticks       = element_blank(),
+               axis.line        = element_blank(),
+               panel.background = element_blank(),
+               panel.border     = element_blank(),
+               panel.grid       = element_blank(),
+               legend.position  = "right") +
+          xlab("") + ylab("") + ggtitle("Avg. wage of Chinese by State")
+
+p_3
+# Form the map, after considering state with enough people, we can see people with highest wage comes from new jersey and texas. We may want to check the income structure in taxes and new jersey.
+
+
+# Average wage for people with high degree by state
+
+# prepare data 
+wage_degree <- chinese %>%
+        filter(is.na(WAGP) == F, SCHL>=21) %>% 
+        group_by(ST) %>% 
+        summarise(wage = mean(WAGP))
+state_49 = data[-c(27,35,52),]
+# We don't have Puerto Rico, Montana and North Dakoda here
+state_49$wage = wage_degree$wage
+all_state$wage = state_49$wage[match(all_state$region,state_49$state)]
+
+# draw map
+
+p_4 <- ggplot(all_state, aes(x=long, y=lat, group=group)) + 
+      geom_polygon(aes(fill=wage), colour="gray78") + 
+      scale_fill_gradient(name="wage", low="white", high="blue")
+p_4 <- p_4 + theme(strip.background = element_blank(),
+               strip.text.x     = element_blank(),
+               axis.text.x      = element_blank(),
+               axis.text.y      = element_blank(),
+               axis.ticks       = element_blank(),
+               axis.line        = element_blank(),
+               panel.background = element_blank(),
+               panel.border     = element_blank(),
+               panel.grid       = element_blank(),
+               legend.position  = "right") +
+          xlab("") + ylab("") + ggtitle("Avg. wage of Chinese with high degree by State")
+
+p_4
+# We can see California gets darker when we look at people with a high degree, new york and new jersey still dominates the map. we may want to say the income structure in new york, new jersey, and california. 
+
+# Taxes income structure 
+# Taxes average income
+TX_wage = chinese %>% 
+        filter(ST == "Texas",is.na(WAGP) == F) %>% 
+        summarise(income = mean(WAGP))
+TX_income = chinese %>%
+        filter(ST == "Texas",is.na(WAGP) == F, WAGP != 0) %>%
+        select(WAGP) %>%
+        arrange(WAGP)
+n = seq(1,734,1)
+qplot(n,TX_income$WAGP)
+
+
+# prepare the data 
+TX_structure = chinese %>% 
+        filter(ST == "Texas",is.na(WAGP) == F) %>%
+        group_by(DECADE, INDP) %>%
+        summarise(wage = mean(WAGP))
+TX_structure$INDP <- factor(TX_structure$INDP, levels = levels(TX_structure$INDP)[length(levels(TX_structure$INDP)):1])
+#Plot the Taxes income structure
+ggplot(TX_structure, aes(x=DECADE)) + geom_point(aes(y=INDP, size=wage, colour=INDP)) +
+  ggtitle("Avg. Income by Industry and Immigrant Period") +
+  guides(colour=FALSE) + theme_minimal()
+# From this graph, we can see that Mining and are a job with a comparetively good salary in each generation; Information and Comunication dominates the job market in 1980's. Health is a goo d job for experienced people but not for youth. 
+
+# New Jersey income structure 
+# New Jersey average income
+NJ_wage = chinese %>% 
+        filter(ST == "New Jersey",is.na(WAGP) == F) %>% 
+        summarise(wage = mean(WAGP))
+# prepare the data 
+NJ_structure = chinese %>% 
+        filter(ST == "New Jersey",is.na(WAGP) == F) %>%
+        group_by(DECADE, INDP) %>%
+        summarise(wage = mean(WAGP))
+NJ_structure$INDP <- factor(NJ_structure$INDP, levels = levels(NJ_structure$INDP)[length(levels(NJ_structure$INDP)):1])
+#Plot the Taxes income structure
+ggplot(NJ_structure, aes(x=DECADE)) + geom_point(aes(y=INDP, size=wage, colour=INDP)) +
+  ggtitle("Avg. Income by Industry and Immigrant Period") +
+  guides(colour=FALSE) + theme_minimal()
+
+# New York income structure 
+# NY average income
+NY_wage = chinese %>% 
+        filter(ST == "New York",is.na(WAGP) == F) %>% 
+        summarise(income = mean(WAGP))
+# prepare the data 
+NY_structure = chinese %>% 
+        filter(ST == "New York",is.na(WAGP) == F) %>%
+        group_by(DECADE, INDP) %>%
+        summarise(wage = mean(WAGP))
+NY_structure$INDP <- factor(NY_structure$INDP, levels = levels(NY_structure$INDP)[length(levels(NY_structure$INDP)):1])
+#Plot the Taxes income structure
+ggplot(NY_structure, aes(x=DECADE)) + geom_point(aes(y=INDP, size=wage, colour=INDP)) +
+  ggtitle("Avg. Income by Industry and Immigrant Period") +
+  guides(colour=FALSE) + theme_minimal()
+
+NJ_wage = chinese %>% 
+        filter(ST == "New Jersey",is.na(WAGP) == F) %>% 
+        summarise(income = mean(WAGP))
+
+CA_wage = chinese %>% 
+        filter(ST == "California",is.na(WAGP) == F) %>% 
+        summarise(income = mean(WAGP))
+
+
+
+
+
+```
+
+
+
+
+
+
+
