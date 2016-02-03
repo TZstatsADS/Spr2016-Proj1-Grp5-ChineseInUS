@@ -143,7 +143,7 @@ ggplot(chinese, aes(AGEP)) +
   xlab("Age") + ylab("Count") + ggtitle("Chinese Population Age")
 ```
 
-Two peaks: 
+Two peaks: The first peak is because of the culture revolution happened in China, US government gives a lot of Chinese immigrants identities. The secodn peak is because of growth of Chinese Economy, more and more people have the chance to study and move to US.
 
 ## 4: Are they married ?
 How does the pattern of marital status change with time ?
@@ -160,7 +160,7 @@ ggplot(chinese, aes(AGEP, group=ifmarried)) +
   xlab("Age") + ylab("Count") + ggtitle("Chinese Population Age by Marital Status")
 ```
 
-Most of the Chinese marry between the age of 25-30.
+Before 25, almost all of Chinese immigrants are not married. Most of the Chinese immigrants choose to marry between the age of 25-30.
 
 ## 5: Where do they live ?
 
@@ -191,7 +191,7 @@ p_1 <- p_1 + theme(strip.background = element_blank(),
 p_1
 ```
 
-California, New York and Texas seem to have the most Chinese
+California, New York and Texas seem to have the most Chinese. Especially for Colifornia, it seems most Chinese immigrants live there.
 
 
 
@@ -231,7 +231,7 @@ p_2 <- p_2 + theme(strip.background = element_blank(),
 p_2
 ```
 
-It seems to vary by states.
+The average income varies by state, we can see that New Jersey has the highest average wage. It probabily becuase most of them work in NYC and live in NJ. Texas has comparatively high average wage and it is interesting to look into Taxes.
 
 
 ## 7: How long do they work ?
@@ -272,7 +272,7 @@ p_work <- p_work + theme(strip.background = element_blank(),
 p_work
 ```
 
-South Dakota, Idaho and Montana residents has proven themselves to be the most hard-working people!
+South Dakota, Idaho and Montana residents has proven themselves to be the most hard-working people. Most of them work in the agriculture and forestry industry. They tend to work more and don't earn much.
 
 ## 8: Average wage for chinese immigrants with a master degree or higher by state
 
@@ -309,6 +309,7 @@ p_3 <- p_3 + theme(strip.background = element_blank(),
 p_3
 ```
 
+We can see that although, the average wage of Texas gets a little lighter on the map but they are still good as that of California and New York.
 
 ## 9: The wage structure of chinese immigrants in Texas
 
@@ -335,6 +336,8 @@ ggplot(chinese_Ed, aes(AGEP, group=SEX)) +
   xlab("Age") + ylab("Count") + ggtitle("Well-educated Chinese Population Age by SEX")
 ```
 
+It seems that the number of well-educated chinese female immigrants are similar to male's. But for older immigrants, there are more males.
+
 ## 11: Gender distribution in each occupation 
 
 We can see each occupation does have different gender distribution.
@@ -344,6 +347,8 @@ ggplot(chinese_Ed, aes(x=OCCP)) +
     geom_bar(aes(fill=SEX), position="fill") +ylab("freq")+
     ggtitle("Sex distribution vs Occupation of Chinese with higher education level")
 ```
+
+For science and computer science, there are a lot more males. For finance and office work, there are a lot more females.
 
 ## Is there gender discrimination ?
 
@@ -380,7 +385,7 @@ ggplot (data = df,aes(industry,salary,fill = gender)) +
                 ggtitle("Salary for Science Related Work by Gender")
 ```
 
-As we can see, there is a high possibilty of gender discrimination. 
+As we can see, there is a sign of gender discrimination. 
 For people under the same education level, working hour and industry, 
 there's still much difference in salary between males and females.
 
