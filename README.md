@@ -13,6 +13,6 @@ proj/
 ├── figs/
 └── output/
 ```
-
+Group member: Yuchen Shi(ys2901) , Ouwen Sha(os2296), Xuan Zuo(xz2467), Yanran Wang(yw2758), Max Mattioli(mwm2154), Qiner Shi(qs2158)
 Please see each subfolder for a README file.
 
