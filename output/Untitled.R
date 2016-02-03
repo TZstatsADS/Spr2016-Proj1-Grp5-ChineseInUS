@@ -31,31 +31,31 @@ levels(SCIENGP)<-c("Sci","Non-sci")
 levels(SEX)<-c("Male","Female")
 levels(ESR)<-c("empd&work","empd not work","unempd","af&work","not in labor force")
 
-#Salary 
+########################
+#we notice a salary difference between male and female.
+#there are some factors which may result in this situation except education level.(given that the sample all have a master degree.)
+#some possible factors: working hour, working industry,gender discrimination,etc.
+##########################
+
+#workinghour
+#we want to see whether the difference of salary within gender is caused by different working hour
 Male<-subset(masterchinese.pus,masterchinese.pus$SEX=="1")
 Female<-subset(masterchinese.pus,masterchinese.pus$SEX=="2")
 meansal.m<-mean(Male$PINCP,na.rm = T)
 meanwkh.m<-mean(Male$WKHP,na.rm = T)
 meansal.f<-mean(Female$PINCP,na.rm = T)
 meanwkh.f<-mean(Female$WKHP,na.rm = T)
-par(mfrow=c(2,1))
-plot(meanwkh.m,meansal.m,xlim = c(25,55),col=2,xlab = "mean.workinghour",ylab = "mean.salary")
-points(meanwkh.f,meansal.f,xlim = c(25,55),col=4)
-legend("topright",col = c(2,4),pch=1,legend = c("Male","Female"),bty="n",cex=0.75)
 
+plot(meanwkh.m,meansal.m,xlim = c(25,55),col="red",pch=19,xlab = "mean.workinghour",ylab = "mean.salary")
+points(meanwkh.f,meansal.f,pch=19,xlim = c(25,55),col="lightblue")
+legend("topright",col = c("red","lightblue"),pch=19,legend = c("Male","Female"),bty="n",cex=0.75)
+
+##################
 #Industry
-slices.m<-c(sum(Male$SCIENGP==1),sum(Male$SCIENGP==2))
-labels.m<-c("Scientific","Non-scientific")
-labels.m <- paste(labels.m, " ", round(slices.m/sum(slices.m)*100,2), "%", sep="")
-pie(slices.m,labels.m,main="Industry--Male",col =c("grey","white"))
-
-slices.f<-c(sum(Female$SCIENGP==1),sum(Female$SCIENGP==2))
-labels.f<-c("Scientific","Non-scientific")
-labels.f <- paste(labels.f, " ", round(slices.f/sum(slices.f)*100,2), "%", sep="")
-pie(slices.f,labels.f,main="Industry--Female",col =c("grey","white"))
-
-
-#Salary vs Industry
+#we can see that scientific industry earns more than those non-scientific
+#and also data shows that males are more likelily to be in a scientific industry than females
+#so the industry difference might be accounted for the salary difference
+#################################
 salar.ind=
   masterchinese.pus%>%
   group_by(SCIENGP)%>%
@@ -66,7 +66,44 @@ salar.ind$SCIENGP<-as.factor(salar.ind$SCIENGP)
 levels(salar.ind$SCIENGP)<-c("Sci","Non-sci")
 plot(salar.ind$avgsalary~salar.ind$SCIENGP)
 
+#Industry
+slices.m<-c(sum(Male$SCIENGP==1),sum(Male$SCIENGP==2))
+labels.m<-c("Scientific","Non-scientific")
+labels.m <- paste(labels.m, " ", round(slices.m/sum(slices.m)*100,2), "%", sep="")
+pie(slices.m,labels.m,main="Industry--Male",col =c("lightgreen","lightyellow"))
+
+slices.f<-c(sum(Female$SCIENGP==1),sum(Female$SCIENGP==2))
+labels.f<-c("Scientific","Non-scientific")
+labels.f <- paste(labels.f, " ", round(slices.f/sum(slices.f)*100,2), "%", sep="")
+pie(slices.f,labels.f,main="Industry--Female",col =c("lightgreen","lightyellow"))
+
+#gender discrimination
+saldif.sci=
+  masterchinese.pus%>%
+  filter(SCIENGP=="1")%>%
+  group_by(SEX)%>%
+  summarise(
+    avgsalary=mean(PINCP,na.rm=T)
+  )
+saldif.sci$SEX<-as.factor(saldif.sci$SEX)
+levels(saldif.sci$SEX)<-c("Male","Female")
+saldif.nonsci=
+  masterchinese.pus%>%
+  filter(SCIENGP=="2")%>%
+  group_by(SEX)%>%
+  summarise(
+    avgsalary=mean(PINCP,na.rm=T)
+  )
+saldif.nonsci$SEX<-as.factor(saldif.nonsci$SEX)
+levels(saldif.nonsci$SEX)<-c("Male","Female")
+
+par(mfrow=c(1,2))
+plot(saldif.sci,ylim=c(50000,100000),main="sci",cex.axis=0.8,cex.lab=0.8)
+plot(saldif.nonsci,ylim=c(50000,100000),main="non-sci",cex.axis=0.8,cex.lab=0.8)
+
+
 #Occupation
+#interested in the occupations that are most welcomed by chinese females
 detach("package:plyr", unload=TRUE) 
 library(dplyr)
 Occupation=
@@ -80,6 +117,6 @@ Occupation=
 occp.sort<- Occupation[order(Occupation$n,decreasing = T),]
 occp.sort<- as.data.frame(occp.sort)
 occp.sort<- subset(occp.sort,occp.sort$n >30)
-barplot(occp.sort$n,names.arg = occp.sort$OCCP,cex.names = 0.4)
-legend("topright",legend = c("800:ACCOUNTANTS AND AUDITORS","2200:POSTSECONDARY TEACHERS","1020:SOFTWARE DEVELOPERS","2310:ELEMENTARY AND MIDDLE SCHOOL TEACHERS","430:MISCELLANEOUS MANAGERS","120:FINANCIAL MANAGERS","1010:COMPUTER PROGRAMMERS","710:MANAGEMENT ANALYSTS","1006:COMPUTER SYSTEMS ANALYSTS","5700:SECRETARIES AND ADMINISTRATIVE ASSISTANTS","3255:REGISTERED NURSES","1760:PHYSICAL SCIENTISTS, ALL OTHER"),bty="n",cex=0.4)
- 
+barplot(occp.sort$n,names.arg = occp.sort$OCCP,col=terrain.colors(12),cex.names = 0.4)
+legend("topright",legend = c("800:ACCOUNTANTS AND AUDITORS","2200:POSTSECONDARY TEACHERS","1020:SOFTWARE DEVELOPERS","2310:ELEMENTARY&MIDDLE TEACHERS","430:MISCELLANEOUS MANAGERS","120:FINANCIAL MANAGERS","1010:COMPUTER PROGRAMMERS","710:MANAGEMENT ANALYSTS","1006:COMPUTER SYSTEMS","5700:SECRETARIES$ASSISTANTS","3255:REGISTERED NURSES","1760:PHYSICAL SCIENTISTS, ALL OTHER"),bty="n",cex=0.7)
+
